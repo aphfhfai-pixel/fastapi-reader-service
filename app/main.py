@@ -196,6 +196,116 @@ async def extract_reader_html(url: str) -> str:
     return build_reader_html(title=title, article_html=cleaned, source_url=final_url)
 
 
+def build_form_page() -> str:
+    return """<!DOCTYPE html>
+<html lang=\"en\">
+  <head>
+    <meta charset=\"utf-8\" />
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+    <title>Reader Service</title>
+    <style>
+      body {
+        margin: 0;
+        background: #faf9f7;
+        color: #181818;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 48px 20px 72px;
+      }
+      h1 { line-height: 1.1; margin-bottom: 12px; }
+      p { color: #555; }
+      form {
+        margin-top: 24px;
+        display: grid;
+        gap: 12px;
+      }
+      input, button {
+        font: inherit;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1px solid #d4d0c7;
+      }
+      button {
+        cursor: pointer;
+        background: #111;
+        color: white;
+        border: none;
+      }
+      button:hover { background: #222; }
+      .hint, code { color: #666; }
+      iframe {
+        margin-top: 24px;
+        width: 100%;
+        min-height: 70vh;
+        border: 1px solid #e4dfd5;
+        border-radius: 16px;
+        background: white;
+      }
+      pre {
+        background: #f1efe9;
+        padding: 16px;
+        border-radius: 12px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Reader Service</h1>
+      <p>Paste a public article URL and this service returns a clean reading-mode HTML version.</p>
+      <form id=\"reader-form\">
+        <input id=\"url\" name=\"url\" type=\"url\" placeholder=\"https://example.com/article\" required />
+        <button type=\"submit\">Open in reader mode</button>
+      </form>
+      <p class=\"hint\">API endpoint: <code>POST /reader</code> with JSON like <code>{\"url\":\"https://example.com\"}</code></p>
+      <pre id=\"error\" hidden></pre>
+      <iframe id=\"result\" title=\"Reader output\"></iframe>
+    </main>
+    <script>
+      const form = document.getElementById('reader-form');
+      const input = document.getElementById('url');
+      const frame = document.getElementById('result');
+      const error = document.getElementById('error');
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        error.hidden = true;
+        frame.srcdoc = '<p style="font-family: sans-serif; padding: 24px;">Loading…</p>';
+        try {
+          const response = await fetch('/reader', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ url: input.value })
+          });
+          const text = await response.text();
+          if (!response.ok) {
+            error.textContent = text;
+            error.hidden = false;
+            frame.srcdoc = '';
+            return;
+          }
+          frame.srcdoc = text;
+        } catch (err) {
+          error.textContent = err.message || String(err);
+          error.hidden = false;
+          frame.srcdoc = '';
+        }
+      });
+    </script>
+  </body>
+</html>
+"""
+
+
+@app.get("/", response_class=HTMLResponse)
+@app.get("/reader", response_class=HTMLResponse)
+async def reader_form() -> HTMLResponse:
+    return HTMLResponse(content=build_form_page())
+
+
 @app.post("/reader", response_class=HTMLResponse)
 async def reader(request: ReaderRequest) -> HTMLResponse:
     try:
