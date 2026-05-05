@@ -2,6 +2,11 @@ services:
   - type: web
     name: fastapi-reader-service
     runtime: docker
+    repo: https://github.com/aphfhfai-pixel/fastapi-reader-service
+    branch: main
+    plan: starter
+    region: oregon
     dockerfilePath: ./Dockerfile
-    autoDeploy: true
+    dockerContext: .
     healthCheckPath: /docs
+    autoDeployTrigger: commit
