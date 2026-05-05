@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: fastapi-reader-service
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /docs
